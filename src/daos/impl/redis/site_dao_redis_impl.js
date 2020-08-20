@@ -95,9 +95,12 @@ const findById = async (id) => {
  * @returns {Promise} - a Promise, resolving to an array of site objects.
  */
 const findAll = async () => {
-  // START CHALLENGE #1
-  return [];
-  // END CHALLENGE #1
+  const client = redis.getClient();
+  const sitesList = await client.smembersAsync(keyGenerator.getSiteIDsKey());
+
+  const rawSites = await Promise.all(sitesList.map(siteKey => client.hgetallAsync(siteKey)));
+
+  return rawSites.map(site => remap(site));
 };
 /* eslint-enable */
 
