@@ -11,7 +11,24 @@ const hitSlidingWindow = async (name, opts) => {
   const client = redis.getClient();
 
   // START Challenge #7
-  return -2;
+  const key = keyGenerator.getRateLimiterKey(name, opts.interval, opts.maxHits);
+  const currentTime = +new Date();
+  const randomNumber = Math.random();
+  const olderValues = currentTime - (opts.interval);
+
+  const transaction = client.multi();
+
+  transaction.zadd(key, currentTime, `${currentTime}-${randomNumber}`);
+  transaction.zremrangebyscore(key, '-inf', olderValues);
+  transaction.zcard(key);
+
+  const [,, hits] = await transaction.execAsync();
+
+  if (hits > opts.maxHits) {
+    return -1;
+  }
+
+  return opts.maxHits - hits;
   // END Challenge #7
 };
 
